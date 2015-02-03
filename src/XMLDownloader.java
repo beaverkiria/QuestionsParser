@@ -178,7 +178,7 @@ public class XMLDownloader {
     public void saveDocument(Document document, String path, String name) {
         try {
             Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            Result output = new StreamResult(new File(path + "/" + name));
+            Result output = new StreamResult(new File(path + "/" + name + ".xml"));
             Source input = new DOMSource(document);
             transformer.transform(input, output);
         } catch (TransformerConfigurationException e) {
