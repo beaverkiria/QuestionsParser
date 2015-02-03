@@ -29,6 +29,7 @@ public class XMLDownloader {
      */
     public XMLDownloader(URL rootURL) {
         this.rootURL = rootURL;
+        this.path = "/Users/kirillcherepanov/IdeaProjects/What?When?Where?/Questions";
     }
 
     /**
@@ -37,7 +38,7 @@ public class XMLDownloader {
      * @throws MalformedURLException if URL is bad formatted
      */
     public XMLDownloader(String rootURL) throws MalformedURLException {
-        this.rootURL = new URL(rootURL);
+        this(new URL(rootURL));
     }
 
     /**
@@ -145,7 +146,7 @@ public class XMLDownloader {
      * @return a name of XML file represented as a {@link java.lang.String}
      */
     private String getNameOfXMLFileFromURL(String url) {
-        String result = "";
+        String result;
         int startIndex = url.indexOf("tour/") + "tour/".length();
         int endIndex = url.lastIndexOf("/xml");
         result = url.substring(startIndex, endIndex);
