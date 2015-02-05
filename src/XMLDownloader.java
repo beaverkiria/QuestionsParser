@@ -19,26 +19,42 @@ import java.net.URLConnection;
  * Created by kirillcherepanov on 03/02/15.
  */
 public class XMLDownloader {
+    private static int questionCount = 0;
+    private static int thousands = 0;
+    boolean flag = false;
     private URL rootURL;
     private String path;
+    private URL treeURL;
 
     /**
      * Constructs an instance of XMLDownloader using provided root URL
      *
+     * @param treeURL an URL of root directory
      * @param rootURL an URL of root XML
+     * @param path path to save file
      */
-    public XMLDownloader(URL rootURL) {
+    public XMLDownloader(URL treeURL, URL rootURL, String path) {
         this.rootURL = rootURL;
-        this.path = "/Users/kirillcherepanov/IdeaProjects/What?When?Where?/Questions";
+        this.treeURL = treeURL;
+        this.path = path;
     }
 
     /**
      * Constructs an instance of XMLDownloader using provided string representation of root URL
+     *
+     * @param treeURL an URL of root directory
      * @param rootURL an URL of root XML
+     * @param path path to save file
      * @throws MalformedURLException if URL is bad formatted
      */
-    public XMLDownloader(String rootURL) throws MalformedURLException {
-        this(new URL(rootURL));
+    public XMLDownloader(String treeURL, String rootURL, String path) throws MalformedURLException {
+        this(new URL(treeURL), new URL(rootURL), path);
+    }
+
+    public static void main(String[] args) throws IOException {
+        final XMLDownloader xmlDownloader1 = new XMLDownloader("http://db.chgk.info/tour/", "http://db.chgk.info/tour//", "/Users/kirillcherepanov/IdeaProjects/What?When?Where?/Questions"), xmlDownloader2 = new XMLDownloader("http://db.chgk.info/tour/", "http://db.chgk.info/tour//", "/Users/kirillcherepanov/IdeaProjects/What?When?Where?/Questions");
+        xmlDownloader1.downloadXMLSubTree("INTER");
+
     }
 
     /**
@@ -67,16 +83,17 @@ public class XMLDownloader {
      * @throws IOException if any I/O error occurs
      */
     public Document getDocumentByURL(URL url) throws IOException {
-        URLConnection connection = url.openConnection();
         Document document = null;
-        try {
-            document = parseXML(connection.getInputStream());
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
+        while (true) {
+            try {
+                URLConnection connection = url.openConnection();
+                document = parseXML(connection.getInputStream());
+            } catch (Exception e) {
+                System.err.print("Connections is lost");
+                continue;
+            }
+            return document;
         }
-        return document;
     }
 
     /**
@@ -189,6 +206,19 @@ public class XMLDownloader {
     }
 
     /**
+     * Saves provided {@link org.w3c.dom.Document} at default path with name from the document
+     *
+     * @param document {@link org.w3c.dom.Document} to save
+     */
+    public void saveDocument(Document document) {
+        try {
+            saveDocument(document, path, document.getElementsByTagName("TextId").item(0).getTextContent());
+        } catch (NullPointerException npe) {
+            return;
+        }
+    }
+
+    /**
      * Downloads a XML file from provided URL and saves it at provided path
      *
      * @param url  a URL of XML file
@@ -197,5 +227,56 @@ public class XMLDownloader {
      */
     public void downloadXMLFile(String url, String path) throws IOException {
         downloadXMLFile(new URL(url), path);
+    }
+
+    /**
+     * Downloads all sub-trees of provided vertex
+     *
+     * @param textId text id of provided vertex
+     * @throws IOException if ant I/O error occurs
+     */
+    public void downloadXMLSubTree(String textId) throws IOException {
+        downloadXMLSubTree(textId, "");
+    }
+
+    /**
+     * Downloads all sub-trees of provided vertex
+     *
+     * @param textId        text id of provided vertex
+     * @param ignoredTextId list of text id to be ignored
+     * @throws IOException if ant I/O error occurs
+     */
+    public void downloadXMLSubTree(String textId, String ignoredTextId) throws IOException {
+        Document document = getDocumentByURL(treeURL.toString() + textId + "/xml");
+        NodeList nodeList = document.getElementsByTagName("TextId");
+
+        if (nodeList.getLength() == 0) {
+            flag = false;
+            return;
+        }
+
+        saveDocument(document);
+
+        flag = false;
+        for (int i = 0; i < nodeList.getLength(); ++ i) {
+            String item = nodeList.item(i).getTextContent();
+            if (item.equals(textId) || ignoredTextId.indexOf(item) != - 1)
+                continue;
+            flag = true;
+            downloadXMLSubTree(item, ignoredTextId);
+
+        }
+
+        if (! flag) {
+            try {
+                questionCount += Integer.parseInt(document.getElementsByTagName("QuestionsNum").item(0).getTextContent());
+                if (questionCount / 1000 > thousands) {
+                    System.out.println(questionCount);
+                    thousands++;
+                }
+            } catch (Exception e) {
+
+            }
+        }
     }
 }
